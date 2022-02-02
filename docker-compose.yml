@@ -1,0 +1,11 @@
+version: "3"
+
+services:
+ gerador-script-azure:
+  container_name: gerador-script-azure
+  image: gerador-script-azure
+  build: 
+   context: .
+  ports:
+   - "8080:80"
+   
