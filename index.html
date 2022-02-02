@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="$1en">
+
+<head>
+    <title></title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="$3css/style.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
+        crossorigin="anonymous"></script>
+    <script>
+        function CreateScriptDbProd(){
+
+        let nameResourceGroup = document.getElementById("nameResourceGroup").value;		
+        let region = document.getElementById("region").value;				
+        let server_name = document.getElementById("server-name").value;			
+        let db_username = document.getElementById("db-username").value;			
+        let db_password = document.getElementById("db-password").value;			
+        let your_ip_address = document.getElementById("your-ip-address").value;		
+        let user_name_git_azure = document.getElementById("user_name_git_azure").value;	
+        let password_git_azure = document.getElementById("password_git_azure").value;	
+        let nameAppServicePlan = document.getElementById("nameAppServicePlan").value;	
+        let app_name = document.getElementById("app-name").value;				
+        let version = document.getElementById("version").value;				
+        let connection_string = document.getElementById("connection-string").value;	
+
+        let script_group_create = `az group create --name ${nameResourceGroup} --location "${region}" `;
+        let script_sql_server_create = `az sql server create --name ${server_name} --resource-group ${nameResourceGroup} --location "${region}" --admin-user ${db_username} --admin-password ${db_password}`;
+        let script_firewall_create = `az sql server firewall-rule create --name AllowLocalClient --server ${server_name} --resource-group ${nameResourceGroup} --start-ip-address=${your_ip_address} --end-ip-address=${your_ip_address}`;
+        let script_db_create = `az sql db create --resource-group ${nameResourceGroup} --server ${server_name} --name coreDB --service-objective S0`;
+        let script_connection_string_create = `az sql db show-connection-string --client ado.net --server ${server_name} --name coreDB`;
+
+        let script = `<div> <h2>Criar um Banco de Dados SQL de produção</h2> <div>`;
+        script =  script +  `<div> <h4>1- Criar um grupo de recursos</h4> <p> ${script_group_create}</p><div>`;
+        script =  script + `<div> <h4>2- Criar um servidor lógico do Banco de Dados SQL</h4> <p> ${script_sql_server_create}</p><div>`
+        script =  script + `<h4>3- Configurar uma regra de firewall de servidor </h4> <p> ${script_firewall_create}</p><div>`
+        script =  script + `<div> <h4>4- Criar um banco de dados </h4> <p> ${script_db_create}</p><div>`
+        script =  script + `<div> <h4>5- Recuperar ConnectionString </h4><p> ${script_connection_string_create}</p><div>`
+        console.log(script);
+        document.getElementById("scriptServer").innerHTML = script;
+        }
+
+        function CreateScriptAppProd(){
+            let nameResourceGroup = document.getElementById("nameResourceGroup").value;		
+            let region = document.getElementById("region").value;				
+            let server_name = document.getElementById("server-name").value;			
+            let db_username = document.getElementById("db-username").value;			
+            let db_password = document.getElementById("db-password").value;			
+            let your_ip_address = document.getElementById("your-ip-address").value;		
+            let user_name_git_azure = document.getElementById("user_name_git_azure").value;	
+            let password_git_azure = document.getElementById("password_git_azure").value;	
+            let nameAppServicePlan = document.getElementById("nameAppServicePlan").value;	
+            let app_name = document.getElementById("app-name").value;				
+            let version = document.getElementById("version").value;				
+            let connection_string = document.getElementById("connection-string").value;	
+
+            if(!connection_string){
+                '[5- Recuperar ConnectionString]';
+            }
+
+            let script_webapp_deployment_create = `az webapp deployment user set --user-name ${user_name_git_azure} --password ${password_git_azure}`;
+            let script_appservice_plan_create = `az appservice plan create --name ${nameAppServicePlan} --resource-group ${nameResourceGroup} --sku FREE --is-linux`;
+            let script_webapp_create = `az webapp create --resource-group ${nameResourceGroup} --plan ${nameAppServicePlan} --name ${app_name} --runtime 'DOTNET|${version}' --deployment-local-git`;
+            let script_webapp_config_connection_create = `az webapp config connection-string set --resource-group ${nameResourceGroup} --name ${app_name} --settings MyDbConnection='${connection_string}' --connection-string-type SQLAzure`;
+            let script_appsettings_create = `az webapp config appsettings set --name ${app_name} --resource-group ${nameResourceGroup} --settings DEPLOYMENT_BRANCH='main'`;
+            script_appsettings_create = script_appsettings_create + `<br> git remote add azure https://${user_name_git_azure}@${app_name}.scm.azurewebsites.net/${app_name}.git`;
+            script_appsettings_create = script_appsettings_create + `<br> git push azure main`;
+
+            let script = `<div> <h2>Implantar o aplicativo no Azure</h2> <div>`;
+            script =  script +  `<div> <h4>1- Configurar a implantação do git local</h4> <p> ${script_webapp_deployment_create}</p><div>`;
+            script =  script + `<div> <h4>2- Criar um plano de Serviço de Aplicativo</h4> <p> ${script_appservice_plan_create}</p><div>`
+            script =  script + `<h4>3- Criar um aplicativo Web</h4> <p> ${script_webapp_create}</p><div>`
+            script =  script + `<div> <h4>4- Configurar a ConnectionString </h4> <p> ${script_webapp_config_connection_create}</p><div>`
+            script =  script + `<div> <h4>5- Enviar do Git para o Azure</h4><p> ${script_appsettings_create}</p><div>`
+            console.log(script);
+            document.getElementById("scriptApp").innerHTML = script;
+            }
+    </script>
+</head>
+
+<body>
+<from id="scriptDbProd" name="scriptDbProd" class="row g-3" onsubmit="CreateScriptDbProd();">
+
+    <br>
+
+    <h2>Criar um Banco de Dados SQL de produção</h2>
+
+    <div class="bd-content ps-lg-4">
+        <h4>1- Criar um grupo de recursos</h4>
+        <p><span class="btn btn-info">Comando No CLI:</span>
+            <br>
+        <p class="text-danger">az group create --name #nameResourceGroup --location "#region"</p>
+
+        Exemplo: az group create --name myResourceGroup --location "West Europe"
+        </p>
+        <p class="text-info bg-dark">Parametros:
+            #nameResourceGroup
+            #region
+        </p>
+        <div class="col-md-2"><label for="nameResourceGroup" class=form-label">#nameResourceGroup </label> <input
+                type="text" required class="form-control" id="nameResourceGroup"> </div>
+        <div class="col-md-2"><label for="region" class=form-label">#region </label> <input type="text" required
+                class="form-control" id="region"> </div>
+    </div>
+    <br>
+    <div class="bd-content ps-lg-4">
+        <h4>2- Criar um servidor lógico do Banco de Dados SQL</h4>
+
+        O que é:
+
+        <p><span class="btn btn-info">Comando No CLI:</span>
+            <br>
+        <p class="text-danger">az sql server create --name #server-name --resource-group myResourceGroup --location
+            "West Europe" --admin-user #db-username --admin-password #db-password</p>
+
+        <p class="text-danger">az sql server create --name #server-name --resource-group #nameResourceGroup --location
+            "#region" --admin-user #db-username --admin-password #db-password</p>
+
+        </p>
+        <p class="text-info bg-dark">Parametros:
+            #server-name
+            #nameResourceGroup
+            #region
+            #db-username
+            #db-password
+        </p>
+        <div class="col-md-2"><label for="server-name" class=form-label">#server-name </label> <input type="text" required
+                class="form-control" id="server-name"> </div>
+        <div class="col-md-2"><label for="db-username" class=form-label">#db-username </label> <input type="text" required
+                class="form-control" id="db-username"> </div>
+        <div class="col-md-2"><label for="db-password" lass=form-label">#db-password </label> <input type="password" required
+                class="form-control" id="db-password"> </div>
+    </div>
+    <br>
+    <div class="bd-content ps-lg-4">
+        <h4>3- Configurar uma regra de firewall de servidor </h4>
+        Para utilização interna no Azure
+        Definir IP inicial e IP final como 0.0.0.0
+        Caso queira fazer consultas de sua máquina indique o ip correspondente
+
+        <p><span class="btn btn-info">Comando No CLI:</span>
+            <br>
+            [Para utilização interna no Azure ]
+        <p class="text-danger">az sql server firewall-rule create --resource-group #nameResourceGroup --server
+            #server-name --name AllowAzureIps --start-ip-address 0.0.0.0 --end-ip-address 0.0.0.0</p>
+        [Para utilização de consultas externas ]
+        <p class="text-danger">az sql server firewall-rule create --name AllowLocalClient --server #server-name
+            --resource-group myResourceGroup --start-ip-address=#your-ip-address --end-ip-address=#your-ip-address</p>
+        <p class="text-danger">az sql server firewall-rule create --name AllowLocalClient --server #server-name
+            --resource-group #nameResourceGroup --start-ip-address=#your-ip-address --end-ip-address=#your-ip-address
+        </p>
+
+        </p>
+        <p class="text-info bg-dark">Parametros:
+            #server-name
+            #nameResourceGroup
+            #your-ip-address
+        </p>
+        <div class="col-md-2"><label for="your-ip-address" class=form-label">#your-ip-address </label> <input
+                type="text" required class="form-control" id="your-ip-address"> </div>
+    </div>
+    <br>
+    <div class="bd-content ps-lg-4">
+        <h4>4- Criar um banco de dados </h4>
+
+        <p><span class="btn btn-info">Comando No CLI:</span>
+            <br>
+        <p class="text-danger">az sql db create --resource-group #nameResourceGroup --server #server-name --name coreDB
+            --service-objective S0</p>
+
+        </p>
+        <p class="text-info bg-dark">Parametros:
+            #server-name
+            #nameResourceGroup
+        </p>
+    </div>
+    <br>
+    <div class="bd-content ps-lg-4">
+        <h4>5- Recuperar ConnectionString </h4>
+
+        <p><span class="btn btn-info">Comando No CLI:</span>
+            <br>
+        <p class="text-danger">az sql db show-connection-string --client ado.net --server #server-name --name coreDB</p>
+        </p>
+        <p class="text-info bg-dark">Parametros:
+            #server-name
+        </p>
+        <div class="col-md-2"><label for="connection-string" class=form-label">#connection-string </label> <input
+                type="text" class="form-control" id="connection-string"> </div>
+    </div>
+    <br>
+    <div class="bd-content ps-lg-4">
+        <h4>6- Configurar o aplicativo para se conectar ao banco de dados de produção </h4>
+        <br>
+        a) Crete Migartion
+        dotnet ef migrations add InitialCreate
+        <br>
+        b) Set connection string to production database
+        $env:ConnectionStrings:MyDbConnection="#connection-string"
+        ou
+        set ConnectionStrings:MyDbConnection=#connection-string
+        <br>
+        c) Run migrations
+        dotnet ef database update
+    </div>
+
+    <div class="bd-content ps-lg-4">
+        <button type="submit" for="scriptDbProd" class="btn btn-primary mb-3" onclick="CreateScriptDbProd();">Criar Script Banco de Dados SQL de produção</button>
+    </div>
+
+</from>
+
+<from class="row g-3">
+    <br>
+    <h2>Implantar o aplicativo no Azure</h2>
+
+    <div class="bd-content ps-lg-4">
+        <h4>1- Configurar a implantação do git local </h4>
+
+        <p><span class="btn btn-info">Comando No CLI:</span>
+            <br>
+        <p class="text-danger">az webapp deployment user set --user-name #user_name_git_azure --password
+            #password_git_azure</p>
+        </p>
+        <p class="text-info bg-dark">Parametros:
+            #user_name_git_azure
+            #password_git_azure
+        </p>
+        <div class="col-md-2"><label for="user_name_git_azure" class=form-label">#user_name_git_azure </label> <input
+                type="text" required class="form-control" id="user_name_git_azure"> </div>
+        <div class="col-md-2"><label for="password_git_azure" class=form-label">#password_git_azure </label> <input
+                type="password" required class="form-control" id="password_git_azure" > </div>
+    </div>
+    <br>
+    <div class="bd-content ps-lg-4">
+        <h4>2- Criar um plano de Serviço de Aplicativo </h4>
+
+        <p><span class="btn btn-info">Comando No CLI:</span>
+            <br>
+        <p class="text-danger">az appservice plan create --name #nameAppServicePlan --resource-group #nameResourceGroup
+            --sku FREE --is-linux</p>
+
+        </p>
+        <p class="text-info bg-dark">Parametros:
+            #nameAppServicePlan
+            #nameResourceGroup
+        </p>
+        <div class="col-md-2"><label for="nameAppServicePlan" class=form-label">#nameAppServicePlan </label> <input
+                type="text" required class="form-control" id="nameAppServicePlan"> </div>
+    </div>
+    <br>
+    <div class="bd-content ps-lg-4">
+        <h4>3- Criar um aplicativo Web </h4>
+
+        <p><span class="btn btn-info">Comando No CLI:</span>
+            <br>
+        <p class="text-danger">az webapp create --resource-group #nameResourceGroup --plan #nameAppServicePlan --name
+            #app-name --runtime 'DOTNET|#version' --deployment-local-git</p>
+
+        </p>
+        <p class="text-info bg-dark">Parametros:
+            #nameResourceGroup
+            #nameAppServicePlan
+            #app-name
+            #version
+        </p>
+        <div class="col-md-2"><label for="app-name" class=form-label">#app-name </label> <input type="text" required
+                class="form-control" id="app-name"> </div>
+        <div class="col-md-2"><label for="version" class=form-label">#version </label> <input type="text" required
+                class="form-control" id="version"> </div>
+        Observação:
+        <br>
+        A URL do Git remoto é mostrada na propriedade deploymentLocalGitUrl com o formato
+        <br>
+        https://#user_name_git_azure@#app-name.scm.azurewebsites.net/#app-name.git.
+        <br>
+        Salve essa URL, pois você precisará dela mais tarde.
+    </div>
+    <br>
+    <div class="bd-content ps-lg-4">
+        <h4>4- Configurar a ConnectionString </h4>
+
+        <p><span class="btn btn-info">Comando No CLI:</span>
+            <br>
+        <p class="text-danger">az webapp config connection-string set --resource-group #nameResourceGroup --name
+            #app-name --settings MyDbConnection='#connection-string' --connection-string-type SQLAzure</p>
+
+        </p>
+        <p class="text-info bg-dark">Parametros:
+            #nameResourceGroup
+            #app-name
+            #connection-string
+        </p>
+    </div>
+    <br>
+    <div class="bd-content ps-lg-4">
+        <h4>5- Enviar do Git para o Azure </h4>
+
+        Passo 1:
+        <p><span class="btn btn-info">Comando No CLI:</span>
+            <br>
+        <p class="text-danger">az webapp config appsettings set --name #app-name --resource-group #nameResourceGroup
+            --settings DEPLOYMENT_BRANCH='main'</p>
+
+        </p>
+        <p class="text-info bg-dark">Parametros:
+            #nameResourceGroup
+            #app-name
+        </p>
+        <br>
+        Passo 2:
+        git remote add azure https://#user_name_git_azure@#app-name.scm.azurewebsites.net/#app-name.git
+            <br>
+            Passo 3:
+            git push azure main
+    </div>
+    <br>
+    <div class="bd-content ps-lg-4">
+
+        <h4>6- Navegar até o aplicativo do Azure </h4>
+
+        http://#app-name.azurewebsites.net
+
+        </p>
+        <p>Parametros:
+            #app-name
+        </p>
+    </div>
+    <br>
+
+    <h2>Publicar alterações no Azure</h2>
+
+    <div class="bd-content ps-lg-4">
+        git add .
+        <br>
+        git commit -m "added done field"
+        <br>
+        git push azure main
+    </div>
+
+    <br>
+    <h2>Logs de diagnóstico de fluxo</h2>
+
+    <div class="bd-content ps-lg-4">
+
+
+        Passo 1:
+        <p><span class="btn btn-info">Comando No CLI:</span>
+        <p class="text-danger">az webapp log config --name #app-name --resource-group #nameResourceGroup
+            --application-logging filesystem --level information</p>
+
+        </p>
+        <p class="text-info bg-dark">Parametros:
+            #nameResourceGroup
+            #app-name
+        </p>
+        Passo 2:
+        <p><span class="btn btn-info">Comando No CLI:</span>
+        <p class="text-danger">az webapp log tail --name #app-name --resource-group #nameResourceGroup</p>
+        </p>
+        Passo 3:
+        Para interromper o streaming de log a qualquer momento, digite Ctrl+C
+    </div>
+
+    <br>
+
+    <h2>Limpar os recursos</h2>
+
+    <div class="bd-content ps-lg-4">
+        <p><span class="btn btn-info">Comando No CLI:</span>
+        <p class="text-danger">az group delete --name myResourceGroup</p>
+
+        </p>
+        <p class="text-info bg-dark">Parametros:
+            #nameResourceGroup
+        </p>
+    </div>
+
+    <div class="bd-content ps-lg-4">
+        <button type="submit" for="scriptDbProd" class="btn btn-primary mb-3" onclick="CreateScriptAppProd();">Implantar o aplicativo no Azure</button>
+    </div>
+
+    <div class="row g-3">
+        <div class="bd-content ps-lg-4">
+            <div id="scriptServer">
+    
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="bd-content ps-lg-4">
+            <div id="scriptApp">
+    
+            </div>
+        </div>
+    </div>
+</from>
+</body>
+
+</html>
